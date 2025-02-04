@@ -7,7 +7,7 @@ namespace ChatApp.Interfaces
     {
         Task<BaseResult> Create(Message message);
         Task<BaseResult> Delete(int id);
-        Task<BaseResult> Update(int id);
+        Task<BaseResult> Update(Message msg);
         Task<BaseResult> GetMessages(int id);
     }
 }

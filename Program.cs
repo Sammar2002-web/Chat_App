@@ -18,6 +18,7 @@ options.UseSqlServer(builder.Configuration.GetSection
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IAppLogsRepository, AppLogsRepository>();
 
 #region Authentication
 builder.Services.AddAuthentication(options =>

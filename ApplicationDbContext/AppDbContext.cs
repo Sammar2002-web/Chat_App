@@ -39,5 +39,6 @@ namespace ChatApp.ApplicationDbContext
         public DbSet<Message> messages { get; set; }
         public DbSet<Group> groups { get; set; }
         public DbSet<GroupMember> groupMembers { get; set; }
+        public DbSet<AppLogs> appLogs { get; set; }
     }
 }

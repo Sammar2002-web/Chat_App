@@ -61,7 +61,7 @@ namespace ChatApp.Controllers
         }
 
         [HttpDelete]
-        [Authorize]
+        //[Authorize]
         public async Task<IActionResult> DeleteUser([FromBody] int Id)
         {
             var data = await _repo.DeleteUser(Id);

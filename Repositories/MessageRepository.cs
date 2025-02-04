@@ -2,6 +2,7 @@
 using ChatApp.Handlers;
 using ChatApp.Interfaces;
 using ChatApp.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -11,16 +12,46 @@ namespace ChatApp.Repositories
     {
         private readonly AppDbContext _dbContext;
         private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IAppLogsRepository _LogsRepository;
 
-        public MessageRepository(AppDbContext dbContext, IHttpContextAccessor contextAccessor)
+        public MessageRepository(AppDbContext dbContext, IHttpContextAccessor contextAccessor, IAppLogsRepository logsRepository)
         {
             _dbContext = dbContext;
             _contextAccessor = contextAccessor;
+            _LogsRepository = logsRepository;
         }
 
-        public Task<BaseResult> GetMessages(int id)
+        public async Task<BaseResult> GetMessages(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var userId = await _dbContext.users.Where(x => x.Id == id).FirstOrDefaultAsync();
+
+                if (userId != null)
+                {
+                    var data = await _dbContext.messages.Where(x => x.SenderId == id || x.ReceiverId == id).ToListAsync();
+
+                    return new BaseResult
+                    {
+                        Data = data,
+                        Code = System.Net.HttpStatusCode.OK,
+                        IsError = false
+                    };
+                }
+                else
+                {
+                    return new BaseResult
+                    {
+                        Data = null,
+                        Code = System.Net.HttpStatusCode.NotFound,
+                        IsError = true
+                    };
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         public async Task<BaseResult> Create(Message message)
@@ -28,7 +59,13 @@ namespace ChatApp.Repositories
             try
             {
                 var json = JsonSerializer.Serialize(message);
-                //var date = message.Timestamp.ToString("MM/dd/yyyy HH:mm:ss");
+
+                var utcNow = DateTime.UtcNow;
+                var localZone = TimeZoneInfo.FindSystemTimeZoneById("PST");
+                var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, localZone);
+
+                message.Timestamp = localTime;
+
 
                 var currentUser = _contextAccessor.HttpContext?.User?.FindFirst(c => c.Type.Contains("Email"))?.Value;
 
@@ -42,14 +79,18 @@ namespace ChatApp.Repositories
                     };
                 }
 
-                currentUser = message.CreatedBy;
+                message.CreatedBy = currentUser;
 
                 var data = await _dbContext.messages.AddAsync(message);
                 await _dbContext.SaveChangesAsync();
 
                 return new BaseResult
                 {
-                    Data = data.Entity,
+                    Data = new
+                    {
+                        message.Id,
+                        Timestamp = message.Timestamp.ToString("MM/dd/yyyy hh:mm:ss tt")
+                    },
                     IsError = false,
                     Code = System.Net.HttpStatusCode.OK,
                     Message = "Message Sent Successfully"
@@ -62,14 +103,75 @@ namespace ChatApp.Repositories
             }
         }
 
-        public Task<BaseResult> Delete(int id)
+        public async Task<BaseResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var msg = await _dbContext.messages.FirstOrDefaultAsync(c => c.Id == id);
+
+                 _dbContext.messages.Remove(msg);
+                await _dbContext.SaveChangesAsync();
+
+                return new BaseResult
+                {
+                    IsError = false,
+                    Code = System.Net.HttpStatusCode.OK,
+                    Message = "Message deleted successfully"
+                };
+            }
+            catch(Exception)
+            {
+                throw;
+            }
         }
 
-        public Task<BaseResult> Update(int id)
+        public async Task<BaseResult> Update(Message msg)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var oldMsg = await _dbContext.messages.FirstOrDefaultAsync(c => c.Id == msg.Id);
+
+                if (oldMsg == null)
+                {
+                    return new BaseResult
+                    {
+                        IsError = true,
+                        Code = System.Net.HttpStatusCode.NotFound,
+                        Message = "Message not found"
+                    };
+                }
+
+                oldMsg.Content = msg.Content;
+                await _dbContext.SaveChangesAsync();
+
+                var updatedeMsgDto = new
+                {
+                    oldMsg.Id,
+                    oldMsg.Content,
+                    oldMsg.SenderId,
+                    oldMsg.ReceiverId,
+                    oldMsg.Timestamp,
+                    oldMsg.CreatedBy
+                };
+
+                return new BaseResult
+                {
+                    IsError = false,
+                    Code = System.Net.HttpStatusCode.OK,
+                    Data = oldMsg,
+                    Message = "Message updated successfully"
+                };
+
+            }
+            catch(Exception)
+            {
+                return new BaseResult
+                {
+                    IsError = true,
+                    Message = $"An error occurred while updating the user",
+                    Data = null
+                };
+            }
         }
     }
 }

@@ -16,12 +16,14 @@ namespace ChatApp.Repositories
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IAppLogsRepository _logsRepository;
 
-        public UserRepository(AppDbContext context, IConfiguration configuration, IHttpContextAccessor contextAccessor)
+        public UserRepository(AppDbContext context, IConfiguration configuration, IHttpContextAccessor contextAccessor, IAppLogsRepository logsRepository)
         {
             _context = context;
             _configuration = configuration;
             _contextAccessor = contextAccessor;
+            _logsRepository = logsRepository;
         }
 
         public async Task<BaseResult> Login(LoginDto login)
@@ -101,7 +103,12 @@ namespace ChatApp.Repositories
             }
             catch (Exception)
             {
-                throw;
+                return new BaseResult
+                {
+                    IsError = true,
+                    Code = System.Net.HttpStatusCode.InternalServerError,
+                    Data = null
+                };
             }
         }
 
@@ -120,15 +127,14 @@ namespace ChatApp.Repositories
                     Data = user
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResult
                 {
                     IsError = true,
-                    Message = $"An error occurred while adding the user: {ex.Message}",
+                    Code = System.Net.HttpStatusCode.InternalServerError,
                     Data = null
                 };
-
             }
         }
 
@@ -136,6 +142,11 @@ namespace ChatApp.Repositories
         {
             try
             {
+                var currentUser = _contextAccessor.HttpContext?.User?.FindFirst(c => c.Type.Contains("Email"))?.Value;
+                var utcNow = DateTime.UtcNow;
+                var localZone = TimeZoneInfo.FindSystemTimeZoneById("PST");
+                var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, localZone);
+
                 var user = await _context.users.FirstOrDefaultAsync(u => u.Id == Id);
                 if (user == null)
                 {
@@ -150,6 +161,14 @@ namespace ChatApp.Repositories
                 _context.users.Remove(user);
                 await _context.SaveChangesAsync();
 
+                
+                var log = await _logsRepository.AddLogs(new AppLogs
+                {
+                    UserName = currentUser,
+                    Date = localTime,
+                    Description = $"{currentUser} Deleted user {user.Name}"
+                });
+
                 return new BaseResult
                 {
                     IsError = false,
@@ -157,12 +176,12 @@ namespace ChatApp.Repositories
                     Message = "User deleted successfully"
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResult
                 {
                     IsError = true,
-                    Message = $"An error occurred while deleing the user: {ex.Message}",
+                    Code = System.Net.HttpStatusCode.InternalServerError,
                     Data = null
                 };
             }
@@ -182,12 +201,12 @@ namespace ChatApp.Repositories
                     Data = data
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResult
                 {
                     IsError = true,
-                    Message = $"An error occurred while fetching the users: {ex.Message}",
+                    Code = System.Net.HttpStatusCode.InternalServerError,
                     Data = null
                 };
             }
@@ -218,12 +237,12 @@ namespace ChatApp.Repositories
                     Data = data
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResult
                 {
                     IsError = true,
-                    Message = $"An error occurred while fetching the user: {ex.Message}",
+                    Code = System.Net.HttpStatusCode.InternalServerError,
                     Data = null
                 };
             }
@@ -258,6 +277,18 @@ namespace ChatApp.Repositories
                     existingUser.Password
                 };
 
+                var currentUser = _contextAccessor.HttpContext?.User?.FindFirst(c => c.Type.Contains("Email"))?.Value;
+                var utcNow = DateTime.UtcNow;
+                var localZone = TimeZoneInfo.FindSystemTimeZoneById("PST");
+                var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, localZone);
+
+                var log = await _logsRepository.AddLogs(new AppLogs
+                {
+                    UserName = currentUser,
+                    Date = localTime,
+                    Description = $"{currentUser} Updated user {updatedUser.Name}"
+                });
+
                 return new BaseResult
                 {
                     IsError = false,
@@ -266,12 +297,12 @@ namespace ChatApp.Repositories
                     Message = "User updated successfully"
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResult
                 {
                     IsError = true,
-                    Message = $"An error occurred while updating the user: {ex.Message}",
+                    Code = System.Net.HttpStatusCode.InternalServerError,
                     Data = null
                 };
             }
