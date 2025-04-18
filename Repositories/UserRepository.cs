@@ -71,6 +71,7 @@ namespace ChatApp.Repositories
 
                     _contextAccessor.HttpContext?.Session.SetString(GlobalConfig.LoginSessionName, user.Id.ToString());
 
+
                     var savedToken = _contextAccessor.HttpContext?.Session.GetString("JWToken");
                     if (string.IsNullOrEmpty(savedToken))
                     {
