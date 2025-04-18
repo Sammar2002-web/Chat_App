@@ -9,6 +9,7 @@ using ChatApp.Interfaces;
 using ChatApp.Repositories;
 using ChatApp.HubContext;
 using System.Text.Json.Serialization;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,18 +49,35 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers().AddJsonOptions(x =>
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Description = "Bearer Authentication with JWT Token",
+        Type = SecuritySchemeType.Http
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
+                }
+            },
+            new List<string>()
+        }
+    });
+});
 
 builder.Services.AddSignalR();
-
-builder.Services.AddDistributedSqlServerCache(m =>
-{
-    m.ConnectionString = builder.Configuration.GetSection("ApplicationDbContext")["ConnStr"];
-    m.SchemaName = "dbo";
-    m.TableName = "SessionData";
-});
 
 builder.Services.AddSession(options =>
 {
@@ -67,6 +85,7 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+builder.Services.AddDistributedMemoryCache();
 
 
 var app = builder.Build();
@@ -74,15 +93,13 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+    //app.MapPost("broadcast", async (string message, IHubContext<ChatHub> context) =>
+    //{
+    //    await context.Clients.All.SendAsync("RecieveMessage", message);
+    //    return Results.NoContent();
+    //});
     app.UseSwaggerUI();
 }
-
-//app.MapPost("broadcast", async (string message, IHubContext<ChatHub, IChatHub> context) =>
-//    {
-//        await context.Clients.All.RecieveMessage(message);
-
-//        return Results.NoContent;
-//});
 
 app.UseSession();
 
@@ -91,9 +108,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-
-app.MapHub<ChatHub>("chat-hub");
-
+app.MapHub<ChatHub>("/chatHub");
 app.MapControllers();
 
 app.Run();

@@ -1,9 +1,8 @@
-﻿using ChatApp.Handlers;
-using ChatApp.Interfaces;
+﻿using ChatApp.Interfaces;
 using ChatApp.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using ChatApp.Server.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ChatApp.Controllers
 {
@@ -13,23 +12,33 @@ namespace ChatApp.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessageRepository _messagRepository;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public MessageController(IMessageRepository messagRepository)
+        public MessageController(IMessageRepository messagRepository, IHubContext<ChatHub> hubContext)
         {
             _messagRepository = messagRepository;
+            _hubContext = hubContext;
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SendMessage([FromBody] string message)
+        {
+            await _hubContext.Clients.All.SendAsync("ReceiveMessage", message);
+            return Ok(new { Message = "Message sent to SignalR hub" });
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Message message)
         {
-            var data = await _messagRepository.Create(message);
-            return Ok(data);
+            await _messagRepository.AddMessage(message);
+            return Ok();
         }
 
         [HttpGet]
         public async Task<IActionResult> GetMessages(int id)
         {
-            var data = await _messagRepository.GetMessages(id);
+            var data = await _messagRepository.GetMessagesForUser(id);
             return Ok(data);
         }
 
