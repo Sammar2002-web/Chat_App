@@ -3,32 +3,15 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace ChatApp.Server.Hubs
 {
-    public class ChatHub : Hub
+    public class ChatHub : Hub<IChatHub>
     {
-        public async Task SendPrivateMessage(string userId, string message)
+        public override async Task OnConnectedAsync()
         {
-            await Clients.User(userId).SendAsync("ReceiveMessage", message);
+            await Clients.All.RecieveMessage($"{Context.ConnectionId} has joined");
         }
-
-        public async Task SendGroupMessage(string groupName, string message)
+        public async Task SendMessage(string message)
         {
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", message);
+            await Clients.All.RecieveMessage($"{Context.ConnectionId} : {message}");
         }
-
-        public async Task SendBroadcastMessage(string message)
-        {
-            await Clients.All.SendAsync("ReceiveMessage", message);
-        }
-
-        public async Task JoinGroup(string groupName)
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        }
-
-        public async Task LeaveGroup(string groupName)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-        }
-
     }
 }

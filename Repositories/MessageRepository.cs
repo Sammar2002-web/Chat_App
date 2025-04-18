@@ -21,38 +21,38 @@ namespace ChatApp.Repositories
             _LogsRepository = logsRepository;
         }
 
-        //public async Task<BaseResult> GetMessages(int id)
-        //{
-        //    try
-        //    {
-        //        var userId = await _dbContext.users.Where(x => x.Id == id).FirstOrDefaultAsync();
+        public async Task<BaseResult> GetMessages(int id)
+        {
+            try
+            {
+                var userId = await _dbContext.users.Where(x => x.Id == id).FirstOrDefaultAsync();
 
-        //        if (userId != null)
-        //        {
-        //            var data = await _dbContext.messages.Where(x => x.SenderId == id || x.ReceiverId == id).ToListAsync();
+                if (userId != null)
+                {
+                    var data = await _dbContext.messages.Where(x => x.SenderId == id || x.ReceiverId == id).ToListAsync();
 
-        //            return new BaseResult
-        //            {
-        //                Data = data,
-        //                Code = System.Net.HttpStatusCode.OK,
-        //                IsError = false
-        //            };
-        //        }
-        //        else
-        //        {
-        //            return new BaseResult
-        //            {
-        //                Data = null,
-        //                Code = System.Net.HttpStatusCode.NotFound,
-        //                IsError = true
-        //            };
-        //        }
-        //    }
-        //    catch (Exception)
-        //    {
-        //        throw;
-        //    }
-        //}
+                    return new BaseResult
+                    {
+                        Data = data,
+                        Code = System.Net.HttpStatusCode.OK,
+                        IsError = false
+                    };
+                }
+                else
+                {
+                    return new BaseResult
+                    {
+                        Data = null,
+                        Code = System.Net.HttpStatusCode.NotFound,
+                        IsError = true
+                    };
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
 
         public async Task<BaseResult> Create(Message message)
         {
@@ -83,15 +83,6 @@ namespace ChatApp.Repositories
 
                 var data = await _dbContext.messages.AddAsync(message);
                 await _dbContext.SaveChangesAsync();
-
-                var msg = new SignalRMessage()
-                {
-                    Id = message.Id,
-                    SenderId = message.SenderId,
-                    ReceiverId = message.ReceiverId,
-                    Message = message.Content,
-                    Timestamp = message.Timestamp
-                };
 
                 return new BaseResult
                 {
@@ -182,23 +173,5 @@ namespace ChatApp.Repositories
                 };
             }
         }
-
-        public async Task<BaseResult> GetMessagesForUser(int userId)
-        {
-            var data = await _dbContext.messages.Where(m => m.ReceiverId == userId || m.SenderId == userId).ToListAsync();
-
-            return new BaseResult
-            {
-                Data = data,
-                Code = System.Net.HttpStatusCode.OK,
-                IsError = false
-            };
-        }
-
-        public async Task AddMessage(Message message)
-        {
-            await _dbContext.messages.AddAsync(message);
-        }
-
     }
 }

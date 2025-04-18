@@ -5,7 +5,6 @@ using ChatApp.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -48,16 +47,15 @@ namespace ChatApp.Repositories
 
                     var claims = new[]
                     {
-                new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]!),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("D")),
-                new Claim("UserId", user.Id.ToString()),
-                new Claim("Email", user.Email)
-            };
+                      new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]!),
+                      new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("D")),
+                      new Claim("UserId", user.Id.ToString()),
+                      new Claim("Email", user.Email.ToString())
+                    };
 
                     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
                     var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-                    var tokenExpiration = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "30");
-
+                    var tokenExpiration = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "20");
                     var token = new JwtSecurityToken(
                         _configuration["Jwt:Issuer"],
                         _configuration["Jwt:Audience"],
@@ -67,29 +65,26 @@ namespace ChatApp.Repositories
 
                     string tokenValue = new JwtSecurityTokenHandler().WriteToken(token);
 
-                    _contextAccessor.HttpContext?.Session.SetString("JWToken", tokenValue);
-
-                    _contextAccessor.HttpContext?.Session.SetString(GlobalConfig.LoginSessionName, user.Id.ToString());
-
-                    var savedToken = _contextAccessor.HttpContext?.Session.GetString("JWToken");
-                    if (string.IsNullOrEmpty(savedToken))
-                    {
-                        Debug.WriteLine("Token not saved to session.");
-                    }
-                    else
-                    {
-                        Debug.WriteLine("Token saved: " + savedToken);
-                    }
+                    _contextAccessor.HttpContext.Session.SetString(GlobalConfig.LoginSessionName, user.Id.ToString());
+                    var id = _contextAccessor.HttpContext.Session.GetString(GlobalConfig.LoginSessionName);
 
                     if (user.DateTime == null)
                     {
                         return new BaseResult
                         {
-                            IsError = false,
+                            IsError = true,
                             Message = "User date information is missing",
                             Data = null
                         };
                     }
+
+                    _contextAccessor.HttpContext.Response.Cookies.Append(GlobalConfig.LoginCookieName, user.Id.ToString(),
+                    new CookieOptions
+                    {
+                        IsEssential = true,
+                        Expires = user.DateTime.AddDays(20),
+                        HttpOnly = true
+                    });
 
                     return new BaseResult
                     {
@@ -116,7 +111,6 @@ namespace ChatApp.Repositories
                 };
             }
         }
-
 
 
         public async Task<BaseResult> AddUser(User user)
@@ -292,7 +286,7 @@ namespace ChatApp.Repositories
                 {
                     UserName = currentUser,
                     Date = localTime,
-                    Description = $"{currentUser} Updated user {existingUser.Name}"
+                    Description = $"{currentUser} Updated user {updatedUser.Name}"
                 });
 
                 return new BaseResult
