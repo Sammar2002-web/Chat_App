@@ -118,8 +118,6 @@ namespace ChatApp.Repositories
             }
         }
 
-
-
         public async Task<BaseResult> AddUser(User user)
         {
             try
@@ -168,7 +166,7 @@ namespace ChatApp.Repositories
                 _context.users.Remove(user);
                 await _context.SaveChangesAsync();
 
-                
+
                 var log = await _logsRepository.AddLogs(new AppLogs
                 {
                     UserName = currentUser,
@@ -314,8 +312,6 @@ namespace ChatApp.Repositories
                 };
             }
         }
-
-
 
     }
 }

@@ -21,17 +21,9 @@ namespace ChatApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendMessage([FromBody] string message)
-        {
-            await _hubContext.Clients.All.SendAsync("ReceiveMessage", message);
-            return Ok(new { Message = "Message sent to SignalR hub" });
-        }
-
-
-        [HttpPost]
         public async Task<IActionResult> Create([FromBody] Message message)
         {
-            await _messagRepository.AddMessage(message);
+            await _messagRepository.CreatePrivateMessage(message);
             return Ok();
         }
 
