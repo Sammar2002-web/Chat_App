@@ -5,13 +5,29 @@ namespace ChatApp.Server.Hubs
 {
     public class ChatHub : Hub<IChatHub>
     {
-        public override async Task OnConnectedAsync()
+        public async Task SendPrivateMessage(string userId, string message, string recieverId)
         {
-            await Clients.All.RecieveMessage($"{Context.ConnectionId} has joined");
+            await Clients.User(userId).ReceiveMessage(message);
         }
-        public async Task SendMessage(string message)
+
+        public async Task SendGroupMessage(string groupName, string message)
         {
-            await Clients.All.RecieveMessage($"{Context.ConnectionId} : {message}");
+            await Clients.Group(groupName).ReceiveMessage(message);
+        }
+
+        public async Task SendBroadcastMessage(string message)
+        {
+            await Clients.All.ReceiveMessage(message);
+        }
+
+        public async Task JoinGroup(string groupName)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        }
+
+        public async Task LeaveGroup(string groupName)
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
         }
     }
 }

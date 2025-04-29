@@ -7,7 +7,7 @@
         public int SenderId { get; set; } = -1;
         public int ReceiverId { get; set; } = -1;
         public string Content { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; } = DateTime.Now.ToUniversalTime();
+        public DateTime Timestamp { get; set; } = DateTime.Now;
         public string? CreatedBy { get; set; } = string.Empty;
     }
 }
