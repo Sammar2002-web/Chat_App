@@ -10,6 +10,8 @@ using ChatApp.Repositories;
 using ChatApp.HubContext;
 using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,6 +79,17 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("myOrigin", policy =>
+    {
+        policy.WithOrigins("https://127.0.0.1:5500")
+              .AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddSignalR();
 
 builder.Services.AddSession(options =>
@@ -105,6 +118,7 @@ app.UseSession();
 
 app.UseHttpsRedirection();
 
+app.UseCors("myOrigin");
 app.UseAuthentication();
 app.UseAuthorization();
 
