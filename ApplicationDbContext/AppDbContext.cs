@@ -1,6 +1,5 @@
 ﻿using ChatApp.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 
 namespace ChatApp.ApplicationDbContext
 {
@@ -13,16 +12,19 @@ namespace ChatApp.ApplicationDbContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Message>()
-                .HasOne<User>()
+                .HasOne(m => m.Sender)
                 .WithMany(u => u.SentMessages)
                 .HasForeignKey(m => m.SenderId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Message>()
-                .HasOne<User>()
+                .HasOne(m => m.Receiver)
                 .WithMany(u => u.ReceivedMessages)
                 .HasForeignKey(m => m.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupMember>()
+                .HasKey(gm => new { gm.GroupId, gm.UserId });
 
             modelBuilder.Entity<GroupMember>()
                 .HasOne(gm => gm.Group)

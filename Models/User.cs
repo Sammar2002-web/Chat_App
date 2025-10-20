@@ -1,11 +1,13 @@
-﻿namespace ChatApp.Models
+﻿using System.Text.Json.Serialization;
+
+namespace ChatApp.Models
 {
     public class User
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
 
         public DateTime DateTime { get; set; } = DateTime.Now;
 
@@ -19,14 +21,4 @@
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
-
-    public class GlobalConfig
-    {
-        public static string LoginSessionName { get; } = "CHAT-Session";
-        public static string LoginCookieName { get; } = "CHAT-Abc";
-        public const string AdminRole = "Admin";
-        public const string UserRole = "User";
-        public static User User { get; set; } = new User();
-    }
-
 }

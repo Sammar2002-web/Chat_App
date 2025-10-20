@@ -15,58 +15,64 @@ namespace ChatApp.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly IUserRepository _repo;
+        private readonly IUserRepository _userRepository;
 
-        public UsersController(IUserRepository repo)
+        public UsersController(IUserRepository userRepository)
         {
-            _repo = repo;
+            _userRepository = userRepository;
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddUser([FromBody] User user)
+        public async Task<IActionResult> Create([FromBody] User user)
         {
-            var data = await _repo.AddUser(user);
+            var data = await _userRepository.Create(user);
             return Ok(data);
         }
 
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginDto login)
         {
-            var data = await _repo.Login(login);
+            var data = await _userRepository.Login(login);
             return Ok(data);
         }
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAll()
         {
-            var data = await _repo.GetAllUsers();
+            var data = await _userRepository.GetAll();
             return Ok(data);
         }
 
-        [HttpGet]
+        [HttpGet("{id}")]
         [Authorize]
-        public async Task<IActionResult> GetUserById([FromQuery] int Id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var data = await _repo.GetUserById(Id);
+            var data = await _userRepository.GetById(id);
             return Ok(data);
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> UpdateUser([FromBody] User user)
+        public async Task<IActionResult> Update([FromBody] User user)
         {
-            var data = await _repo.UpdateUser(user);
+            var data = await _userRepository.Update(user);
             return Ok(data);
         }
 
-        [HttpDelete]
-        //[Authorize]
-        public async Task<IActionResult> DeleteUser([FromBody] int Id)
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Delete(int id)
         {
-            var data = await _repo.DeleteUser(Id);
+            var data = await _userRepository.Delete(id);
             return Ok(data);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProfile(int id, [FromBody] UserDto userDto)
+        {
+            var result = await _userRepository.UpdateProfile(id, userDto);
+            return Ok(result);
+        }
     }
 }

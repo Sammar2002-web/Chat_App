@@ -6,11 +6,13 @@ namespace ChatApp.Interfaces
 {
     public interface IUserRepository
     {
-        Task<BaseResult> AddUser(User user);
+        Task<BaseResult> GetById(int id);
+        Task<BaseResult> GetAll();
+        Task<BaseResult> Create(User user);
+        Task<BaseResult> Update(User user);
+        Task<BaseResult> Delete(int id);
+        Task<User> GetByEmail(string email);
+        Task<BaseResult> UpdateProfile(int id, UserDto userDto);
         Task<BaseResult> Login(LoginDto login);
-        Task<BaseResult> GetAllUsers();
-        Task<BaseResult> GetUserById(int Id);
-        Task<BaseResult> UpdateUser(User user);
-        Task<BaseResult> DeleteUser(int Id);
     }
 }

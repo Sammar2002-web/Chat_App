@@ -31,62 +31,94 @@ namespace ChatApp.Repositories
         {
             try
             {
-                var json = JsonSerializer.Serialize(message);
+                if (message.ReceiverId == null)
+                {
+                    //message.ReceiverId = 2;
+                    return new BaseResult
+                    {
+                        IsError = true,
+                        Code = System.Net.HttpStatusCode.BadRequest,
+                        Message = "ReceiverId is required."
+                    };
+                }
 
-                var utcNow = DateTime.UtcNow;
-                var localZone = TimeZoneInfo.FindSystemTimeZoneById("PST");
-                var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, localZone);
+                try
+                {
+                    var utcNow = DateTime.UtcNow;
+                    var localZone = TimeZoneInfo.FindSystemTimeZoneById("Pakistan Standard Time");
+                    var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, localZone);
 
-                message.Timestamp = localTime;
+                    message.Timestamp = localTime;
 
+                    await _dbContext.messages.AddAsync(message);
+                    await _dbContext.SaveChangesAsync();
 
-                var currentUser = _contextAccessor.HttpContext?.User?.FindFirst(c => c.Type.Contains("Email"))?.Value;
+                    await _hubContext.Clients
+                                     .User(message.ReceiverId.Value.ToString())
+                                     .ReceiveMessage(message);
 
-                if (currentUser == null)
+                    return new BaseResult
+                    {
+                        Data = new
+                        {
+                            message.Id,
+                            Timestamp = message.Timestamp.ToString("dd/MM/yyyy hh:mm:ss tt")
+                        },
+                        IsError = false,
+                        Code = System.Net.HttpStatusCode.OK,
+                        Message = "Message Sent Successfully ✅"
+                    };
+                }
+                catch (Exception ex)
                 {
                     return new BaseResult
                     {
                         IsError = true,
-                        Message = "No NameIdentifier claim found",
-                        Data = null
+                        Code = System.Net.HttpStatusCode.InternalServerError,
+                        Message = $"Failed to send message: {ex.Message}"
                     };
                 }
-
-                message.CreatedBy = currentUser;
-
-                var data = await _dbContext.messages.AddAsync(message);
-                await _dbContext.SaveChangesAsync();
-
-                var msg = new SignalRMessage()
-                {
-                    Id = message.Id,
-                    SenderId = message.SenderId,
-                    ReceiverId = message.ReceiverId,
-                    Message = message.Content,
-                    Timestamp = message.Timestamp
-                };
-                var signalRMsg = _hubContext.Clients.All.SendPrivateMessage(msg.SenderId.ToString(), msg.Message, msg.ReceiverId.ToString());
-
-                Debug.WriteLine($"SignalR message sent: {signalRMsg}");
-
-                return new BaseResult
-                {
-                    Data = new
-                    {
-                        message.Id,
-                        Timestamp = message.Timestamp.ToString("MM/dd/yyyy hh:mm:ss tt")
-                    },
-                    IsError = false,
-                    Code = System.Net.HttpStatusCode.OK,
-                    Message = "Message Sent Successfully"
-                };
             }
-
-            catch (Exception)
+            catch(Exception ex)
             {
-                throw;
+                throw ex;
             }
         }
+
+
+        //public async Task<BaseResult> CreatePrivateMessage(Message message)
+        //{
+        //    try
+        //    {
+        //        var utcNow = DateTime.UtcNow;
+        //        var localZone = TimeZoneInfo.FindSystemTimeZoneById("PST");
+        //        var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, localZone);
+
+        //        message.Timestamp = localTime;
+
+        //        var data = await _dbContext.messages.AddAsync(message);
+        //        await _dbContext.SaveChangesAsync();
+
+        //        await _hubContext.Clients.User(message.ReceiverId.ToString()!).ReceiveMessage(message.Content);
+
+        //        return new BaseResult
+        //        {
+        //            Data = new
+        //            {
+        //                message.Id,
+        //                Timestamp = message.Timestamp.ToString("MM/dd/yyyy hh:mm:ss tt")
+        //            },
+        //            IsError = false,
+        //            Code = System.Net.HttpStatusCode.OK,
+        //            Message = "Message Sent Successfully"
+        //        };
+        //    }
+
+        //    catch (Exception)
+        //    {
+        //        throw;
+        //    }
+        //}
 
         public async Task<BaseResult> Delete(int id)
         {
@@ -146,8 +178,7 @@ namespace ChatApp.Repositories
                     oldMsg.Content,
                     oldMsg.SenderId,
                     oldMsg.ReceiverId,
-                    oldMsg.Timestamp,
-                    oldMsg.CreatedBy
+                    oldMsg.Timestamp
                 };
 
                 return new BaseResult
@@ -159,7 +190,7 @@ namespace ChatApp.Repositories
                 };
 
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return new BaseResult
                 {
@@ -170,11 +201,14 @@ namespace ChatApp.Repositories
             }
         }
 
-        public async Task<BaseResult> GetMessagesForUser(int userId)
+        public async Task<BaseResult> GetMessagesForUser(int userId, int recipientId)
         {
             try
             {
-                var data = await _dbContext.messages.Where(m => m.ReceiverId == userId || m.SenderId == userId).ToListAsync();
+                var data = await _dbContext.messages
+                    .Where(m => (m.SenderId == userId && m.ReceiverId == recipientId) || (m.SenderId == recipientId && m.ReceiverId == userId))
+                    .ToListAsync();
+
                 if (data == null || data.Count == 0)
                 {
                     return new BaseResult

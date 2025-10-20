@@ -1,20 +1,22 @@
-﻿using ChatApp.Interfaces;
+﻿using ChatApp.HubContext;
+using ChatApp.Interfaces;
 using ChatApp.Models;
 using ChatApp.Server.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ChatApp.Controllers
 {
-    //[Authorize]
+    [Authorize]
     [Route("api/[controller]/[action]")]
     [ApiController]
     public class MessageController : ControllerBase
     {
         private readonly IMessageRepository _messagRepository;
-        private readonly IHubContext<ChatHub> _hubContext;
+        private readonly IHubContext<ChatHub, IChatHub> _hubContext;
 
-        public MessageController(IMessageRepository messagRepository, IHubContext<ChatHub> hubContext)
+        public MessageController(IMessageRepository messagRepository, IHubContext<ChatHub, IChatHub> hubContext)
         {
             _messagRepository = messagRepository;
             _hubContext = hubContext;
@@ -23,14 +25,16 @@ namespace ChatApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Message message)
         {
-            await _messagRepository.CreatePrivateMessage(message);
-            return Ok();
+            var result = await _messagRepository.CreatePrivateMessage(message);
+            await _hubContext.Clients.User(message.ReceiverId.ToString()).ReceiveMessage(message);
+            await _hubContext.Clients.User(message.SenderId.ToString()).ReceiveMessage(message);
+            return Ok(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetMessages(int id)
+        [HttpGet("{userId}/{recipientId}")]
+        public async Task<IActionResult> GetMessages(int userId, int recipientId)
         {
-            var data = await _messagRepository.GetMessagesForUser(id);
+            var data = await _messagRepository.GetMessagesForUser(userId, recipientId);
             return Ok(data);
         }
 
