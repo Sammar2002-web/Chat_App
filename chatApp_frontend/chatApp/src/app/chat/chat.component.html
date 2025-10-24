@@ -1,0 +1,113 @@
+<div class="chat-container" [class.user-list-open]="isUserListOpen">
+  <div class="user-list-mobile-toggle" (click)="toggleUserList()">
+    <i class="fas fa-users"></i>
+  </div>
+
+  <div class="user-list">
+    <div class="user-list-header">
+      <h3>Conversations</h3>
+    </div>
+    <ul>
+      <li 
+        *ngFor="let user of users" 
+        (click)="selectUser(user)" 
+        [class.selected]="selectedUser?.id === user.id"
+        class="user-item"
+      >
+        <div class="user-avatar">{{ user.name?.charAt(0) || 'U' }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ user.name || 'Unknown User' }}</span>
+        </div>
+      </li>
+    </ul>
+    <div class="connection-status" [class.connected]="isConnected">
+      {{ isConnected ? '🟢 Connected' : '🔴 Disconnected' }}
+      <br>
+      <small>State: {{ connectionState }}</small>
+    </div>
+      <div class="setting-item">
+        <label for="theme-toggle">Dark Theme</label>
+        <div class="theme-switch-wrapper">
+          <label class="theme-switch" for="theme-toggle">
+            <input type="checkbox" id="theme-toggle" (change)="toggleTheme()" [checked]="isDarkMode"/>
+            <div class="slider round"></div>
+          </label>
+        </div>
+      </div>
+      <div class="setting-item">
+        <button class="btn btn-primary" (click)="toggleProfileEdit()">Edit Profile</button>
+      </div>
+      <div class="profile-form" *ngIf="isProfileEditOpen">
+        <h4>Edit Profile</h4>
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" class="form-control" [(ngModel)]="currentUser.name">
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" class="form-control" [(ngModel)]="currentUser.email">
+        </div>
+        <button class="btn btn-primary" (click)="updateProfile()">Save Changes</button>
+      </div>
+  </div>
+  
+  <div class="chat-window">
+    <div *ngIf="selectedUser" class="chat-header">
+      <div class="chat-user-info">
+        <div class="chat-user-avatar">{{ selectedUser.name?.charAt(0) || 'U' }}</div>
+        <div>
+          <h3>{{ selectedUser.name || 'Unknown User' }}</h3>
+          <span classs="chat-status">Online</span>
+        </div>
+      </div>
+    </div>
+    
+    <div *ngIf="!selectedUser" class="no-user-selected">
+      <div class="welcome-message">
+        <h3>Welcome to Gemini Chat</h3>
+        <p>Select a conversation to start messaging</p>
+      </div>
+    </div>
+
+    <div class="messages" #messagesContainer *ngIf="selectedUser">
+      <div *ngIf="loading" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>Loading messages...</p>
+      </div>
+      
+      <div *ngFor="let message of messages" [ngClass]="isMyMessage(message) ? 'sent' : 'received'" class="message-container">
+        <div class="message-bubble">
+          <div class="message-sender">{{ getUserName(message.senderId) }}</div>
+          <p class="message-content">{{ message.content }}</p>
+          <span class="message-timestamp">
+            {{ formatTimestamp(message.timestamp) }}
+            <span *ngIf="message.isOptimistic" class="sending-indicator"> • Sending...</span>
+          </span>
+        </div>
+      </div>
+      
+      <div *ngIf="messages.length === 0 && !loading" class="no-messages">
+        <p>No messages yet. Start the conversation!</p>
+      </div>
+    </div>
+
+    <div class="message-input" *ngIf="selectedUser">
+      <input 
+        type="text" 
+        [(ngModel)]="newMessage" 
+        placeholder="Type a message..." 
+        (keyup.enter)="sendMessage()"
+        (input)="onInput()"
+        class="message-input-field"
+      >
+      <button 
+        *ngIf="showSendButton"
+        (click)="sendMessage()" 
+        [disabled]="!newMessage.trim()"
+        class="send-button"
+      >
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>
