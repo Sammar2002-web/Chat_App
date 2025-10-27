@@ -1,1 +1,78 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --background-color: #fff;
+  --sent-bubble-color: #dcf8c6;
+  --received-bubble-color: #ffffff;
+  --text-color: #212529;
+  --card-background: #ffffff;
+  --border-color: #e0e0e0;
+}
+
+/* Dark Theme */
+body.dark-theme {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --light-color: #343a40;
+  --dark-color: #f8f9fa;
+  --background-color: #121212;
+  --sent-bubble-color: #262d31;
+  --received-bubble-color: #343a40;
+  --text-color: #f8f9fa;
+  --card-background: #1f1f1f;
+  --border-color: #343a40;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+body.dark-theme .user-list {
+  background-color: var(--card-background);
+  border-right-color: var(--border-color);
+}
+
+body.dark-theme .user-list-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-theme .user-item:hover {
+  background-color: var(--light-color);
+}
+
+body.dark-theme .user-item.selected {
+  background-color: var(--primary-color);
+}
+
+body.dark-theme .chat-window {
+  background-color: var(--background-color);
+}
+
+body.dark-theme .chat-header {
+  background-color: var(--card-background);
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-theme .message-container.received .message-bubble {
+  background-color: var(--received-bubble-color);
+}
+
+body.dark-theme .message-input {
+  background-color: var(--card-background);
+  border-top-color: var(--border-color);
+}
+
+body.dark-theme .message-input-field {
+  background-color: var(--light-color);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body.dark-theme .settings-modal .settings-content {
+  background-color: var(--card-background);
+}
+
+body.dark-theme .settings-header {
+  border-bottom-color: var(--border-color);
+}
